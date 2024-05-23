@@ -1,9 +1,9 @@
 package com.ibm.eventstreams.connect.rabbitmqsource.config;
 
-import org.apache.kafka.common.config.ConfigDef;
-
 import java.util.List;
 import java.util.Map;
+
+import org.apache.kafka.common.config.ConfigDef;
 
 public class RabbitMQSourceConnectorConfig extends RabbitMQConnectorConfig {
 
@@ -23,6 +23,10 @@ public class RabbitMQSourceConnectorConfig extends RabbitMQConnectorConfig {
     public static final String CONFIG_NAME_RABBITMQ_PREFETCH_GLOBAL = "rabbitmq.prefetch.global";
     static final String CONFIG_DOCUMENT_RABBITMQ_PREFETCH_GLOBAL = "True if the settings should be applied to the entire channel rather than to each consumer.";
 
+    public final boolean valueIsBytes;
+    public static final String CONFIG_NAME_VALUE_CONVERTER = "value_keep_bytes";
+    static final String CONFIG_DOCUMENTATION_VALUE_CONVERTER = "Keep value data as bytes";
+
     public RabbitMQSourceConnectorConfig(Map<String, String> settings) {
         super(config(), settings);
 
@@ -30,6 +34,7 @@ public class RabbitMQSourceConnectorConfig extends RabbitMQConnectorConfig {
         this.queues = this.getList(CONFIG_NAME_SOURCE_RABBITMQ_QUEUES);
         this.prefetchCount = this.getInt(CONFIG_NAME_RABBITMQ_PREFETCH_COUNT);
         this.prefetchGlobal = this.getBoolean(CONFIG_NAME_RABBITMQ_PREFETCH_GLOBAL);
+        this.valueIsBytes = this.getBoolean(CONFIG_NAME_VALUE_CONVERTER);
     }
 
     public static ConfigDef config() {
@@ -39,6 +44,7 @@ public class RabbitMQSourceConnectorConfig extends RabbitMQConnectorConfig {
         config.define(CONFIG_NAME_SOURCE_RABBITMQ_QUEUES, ConfigDef.Type.LIST, ConfigDef.Importance.HIGH, CONFIG_DOCUMENTATION_SOURCE_RABBITMQ_QUEUE);
         config.define(CONFIG_NAME_RABBITMQ_PREFETCH_COUNT, ConfigDef.Type.INT, 100, ConfigDef.Importance.MEDIUM, CONFIG_DOCUMENTATION_RABBITMQ_PREFETCH_COUNT);
         config.define(CONFIG_NAME_RABBITMQ_PREFETCH_GLOBAL, ConfigDef.Type.BOOLEAN, false, ConfigDef.Importance.MEDIUM, CONFIG_DOCUMENT_RABBITMQ_PREFETCH_GLOBAL);
+        config.define(CONFIG_NAME_VALUE_CONVERTER, ConfigDef.Type.BOOLEAN, false, ConfigDef.Importance.MEDIUM, CONFIG_DOCUMENTATION_VALUE_CONVERTER);
 
         return config;
     }

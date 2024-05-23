@@ -1,5 +1,19 @@
 package com.ibm.eventstreams.connect.rabbitmqsource.sourcerecord;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.apache.kafka.common.utils.SystemTime;
+import org.apache.kafka.common.utils.Time;
+import org.apache.kafka.connect.data.Schema;
+import static org.apache.kafka.connect.data.Schema.BYTES_SCHEMA;
+import static org.apache.kafka.connect.data.Schema.OPTIONAL_STRING_SCHEMA;
+import org.apache.kafka.connect.header.Header;
+import org.apache.kafka.connect.source.SourceRecord;
+
 import com.google.common.collect.ImmutableMap;
 import com.ibm.eventstreams.connect.rabbitmqsource.config.RabbitMQSourceConnectorConfig;
 import com.ibm.eventstreams.connect.rabbitmqsource.schema.EnvelopeSchema;
@@ -8,21 +22,8 @@ import com.ibm.eventstreams.connect.rabbitmqsource.schema.ValueSchema;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.LongString;
-import org.apache.kafka.common.utils.SystemTime;
-import org.apache.kafka.common.utils.Time;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.header.Header;
-import org.apache.kafka.connect.source.SourceRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-
-import static org.apache.kafka.connect.data.Schema.*;
 
 public class RabbitMQSourceRecordFactory {
-    private static final Logger logger = LoggerFactory.getLogger(RabbitMQSourceRecordFactory.class);
 
     private final RabbitMQSourceConnectorConfig config;
     private final Time time = new SystemTime();
@@ -30,7 +31,6 @@ public class RabbitMQSourceRecordFactory {
     public RabbitMQSourceRecordFactory(RabbitMQSourceConnectorConfig config) {
         this.config = config;
     }
-
 
     private Header toConnectHeader(String key, Object value) {
         return new Header() {
@@ -91,17 +91,18 @@ public class RabbitMQSourceRecordFactory {
         final Map<String, ?> sourceOffset = ImmutableMap.of(EnvelopeSchema.FIELD_DELIVERYTAG, envelope.getDeliveryTag());
 
         Object key = null;
-        if (basicProperties.getHeaders() != null){
-        	key = basicProperties.getHeaders().get(KeySchema.KEY);
+        if (basicProperties.getHeaders() != null) {
+            key = basicProperties.getHeaders().get(KeySchema.KEY);
         }
         key = key == null ? null : key.toString();
-        final Struct value = ValueSchema.toStruct(consumerTag, envelope, basicProperties, bytes);
+
+        ValueSchema vs = new ValueSchema(this.config.valueIsBytes);
 
         List<Header> headers = new ArrayList<Header>();
         if (basicProperties.getHeaders() != null) {
-        	headers = toConnectHeaders(basicProperties.getHeaders());
+            headers = toConnectHeaders(basicProperties.getHeaders());
         }
-        final String messageBody = value.getString(ValueSchema.FIELD_MESSAGE_BODY);
+
         long timestamp = Optional.ofNullable(basicProperties.getTimestamp()).map(Date::getTime).orElse(this.time.milliseconds());
 
         return new SourceRecord(
@@ -111,8 +112,8 @@ public class RabbitMQSourceRecordFactory {
                 null,
                 OPTIONAL_STRING_SCHEMA,
                 key,
-                STRING_SCHEMA,
-                messageBody,
+                vs.getBodySchema(),
+                vs.getMessageBody(),
                 timestamp,
                 headers
         );
